@@ -45,7 +45,7 @@ int writeImageFSTREAM(const char *name, int WIDTH, int HEIGHT)
     }
     return 0;
 }
-int main()
+int Smain()
 {
     const int WIDTH = 800, HEIGHT = 800;
     const char *filename = "test.ppm";
