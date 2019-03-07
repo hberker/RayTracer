@@ -1,15 +1,33 @@
 #include <fstream>
 #include <cmath>
-
+#include <vector>
 using namespace std;
 
-
+double clampDouble255(double d)
+{
+    if (d > 255)
+    {
+        return 255;
+    }else if (d < 0)
+    {
+        return 0;
+    }
+    return d;
+}
 class Color
 {
     public:
         Color(){r=g=b=0;}
         Color(int R, int G, int B) : r(R), g(G), b(B) {}
 
+        Color lighten(double scale)
+        {
+            return Color(clampDouble255(r + scale),clampDouble255(g + scale), clampDouble255(b + scale));
+        }
+        bool operator==(Color c)
+        {
+            return (r = c.r && g == c.g && b == c.b);
+        }
         int r,g,b;
 };
 class Vect3f
@@ -39,12 +57,6 @@ double dot(Vect3f v, Vect3f b)
 {
     return (v.x * b.x + v.y * b.y + v.z * b.z);
 }
-class Object
-{
-    public:
-        Vect3f center;
-        
-};
 class Ray
 {
     public:
@@ -52,12 +64,29 @@ class Ray
         Vect3f direction;
         Ray(Vect3f o, Vect3f d) : origin(o), direction(d) {}
 };
+class Object
+{
+    public:
+        virtual bool intersect(Ray, double&) 
+        {
+            return false;
+        };
+        virtual Color getColor()
+        {
+            return Color(255,255,255);
+        }
+        //Color color = Color(255,255,255);
+        
+};
 class Sphere : public Object
 {
     public:
         Vect3f center;
+        Color color;
         double radius;
+        
         Sphere(Vect3f c, double r) : center(c), radius(r) {}
+        Sphere(Vect3f c, double r, Color col) : center(c), radius(r), color(col) {}
         
         bool intersect(Ray ray, double &t)
         {
@@ -81,6 +110,11 @@ class Sphere : public Object
                 return true;
             }
         }
+        Color getColor()
+        {
+            return color;
+        }
+
 };
 class Plane : public Object
 {
@@ -97,7 +131,7 @@ class Plane : public Object
         Vect3f normal;
         double distance;
         Color color;
-        double findIntersection(Ray r)
+        double findIntersection(Ray r, double &t)
         {
             Vect3f ray_direction = r.origin;
             double a  = dot(ray_direction, normal);
@@ -115,7 +149,7 @@ class Plane : public Object
 
             }
         }
-        bool didIntersect(Ray r)
+        bool intersect(Ray r, double &t)
         {
             Vect3f ray_direction = r.origin;
             double a  = dot(ray_direction, normal);
@@ -134,6 +168,10 @@ class Plane : public Object
                 /* Ray Intersects Plane */
                 return true;
             }
+        }
+        Color getColor()
+        {
+            return color;
         }
 };
 
@@ -158,10 +196,20 @@ int main()
     const Color WHITE(255,255,255);
     const Color BLACK(0,0,0);
     const Color GREEN(0,255,0);
+    const Color RED(255,0,0);
+    Color SKY_BLUE(40,60,92);
 
-    Sphere sphere(Vect3f(WIDTH/2, HEIGHT/2, -1000000), 50);
-    Sphere light(Vect3f(0, 0, 50), 1);
-    Plane plane(Vect3f(.001, .00000000000001, 19), 1, GREEN);
+    Object *sphere;
+    Object *light;
+    Object *plane;
+    
+    sphere = new Sphere(Vect3f(WIDTH/2, HEIGHT/2, -1000000), 50, RED);
+    //light = new Sphere(Vect3f(0, 0, 50), 1, WHITE);
+    plane = new Plane(Vect3f(.001, .00000000000001, 19), 1, GREEN);
+    
+    //ORDERED BY IMPORTANCE IN SCENE
+    const vector<Object*> SCENE_OBJECTS = {sphere,plane};
+    
     //Sphere sphereTwo(Vect3f(WIDTH/5, HEIGHT/4, 5), 50);
 
     for (int row = 0; row < HEIGHT; row++)
@@ -172,25 +220,20 @@ int main()
             Ray ray(Vect3f(row,col,0), Vect3f(0,0, -1));
             
             double t = 20000;
-            
-            //Check for intersections
-            if(sphere.intersect(ray,t))
-            {
+            bool NOHIT = true;
 
-                //Point of Intersection
-                Vect3f pi =  ray.origin + ray.direction * t;
-                
-                //Light intersection
-                
-                writeOutPixel(&img, WHITE);
-            }
-            else if (plane.didIntersect(ray))
+            for(Object *obj : SCENE_OBJECTS)
             {
-                writeOutPixel(&img, GREEN);
-            }else
-            {
-                writeOutPixel(&img, BLACK);
+                if(NOHIT)
+                {
+                    if(obj->intersect(ray, t))
+                    {
+                        writeOutPixel(&img, obj->getColor());
+                        NOHIT = false;
+                    }
+                }
             }
+            if (NOHIT) writeOutPixel(&img, SKY_BLUE.lighten(row / 2));
         }
     }
     return 0;
