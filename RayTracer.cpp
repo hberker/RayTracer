@@ -28,6 +28,10 @@ class Color
         {
             return (r = c.r && g == c.g && b == c.b);
         }
+        Color operator+(double d)
+        {
+            return Color(clampDouble255(r+d), clampDouble255(g+d),clampDouble255(b+d));
+        }
         int r,g,b;
 };
 class Vect3f
@@ -202,6 +206,8 @@ int main()
     Object *sphere;
     Object *light;
     Object *plane;
+
+    Vect3f LIGHTSOURCE(WIDTH/2 + 100 , HEIGHT/2 - 100, -1000000);
     
     sphere = new Sphere(Vect3f(WIDTH/2, HEIGHT/2, -1000000), 50, RED);
     //light = new Sphere(Vect3f(0, 0, 50), 1, WHITE);
@@ -228,7 +234,23 @@ int main()
                 {
                     if(obj->intersect(ray, t))
                     {
-                        writeOutPixel(&img, obj->getColor());
+                        
+
+                        Vect3f hitPoint = ray.direction * t + ray.origin;
+                        
+                        Ray lightRay(LIGHTSOURCE, hitPoint);
+                        
+                        if (obj->intersect(lightRay, t))
+                        {
+                            writeOutPixel(&img, obj->getColor() + (t/420));
+                        }else
+                        {
+                            writeOutPixel(&img, obj->getColor());
+
+                        }
+                        
+        
+                        
                         NOHIT = false;
                     }
                 }
