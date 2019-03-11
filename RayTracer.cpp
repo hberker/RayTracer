@@ -1,6 +1,7 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
+#include <iostream>
 using namespace std;
 
 double clampDouble255(double d)
@@ -31,6 +32,14 @@ class Color
         Color operator+(double d)
         {
             return Color(clampDouble255(r+d), clampDouble255(g+d),clampDouble255(b+d));
+        }
+        Color operator*(double d)
+        {
+            return Color(clampDouble255(r*d), clampDouble255(g*d),clampDouble255(b*d));
+        }
+        Color operator-(double d)
+        {
+            return Color(clampDouble255(r -d), clampDouble255(g-d), clampDouble255(b-d));
         }
         int r,g,b;
 };
@@ -189,8 +198,23 @@ int writeOutPixel(ofstream *img, Color c)
 {
     *img << c.r << " " << c.g << " " << c.b << endl;
 }
+double clamp(double val, double min, double max )
+{
+    if(val < min) return min;
+    if(val > max) return max;
+    return val;
+}
 int main()
 {
+
+    /*STATS*/
+    double mean = 0;
+    double max = 0;
+    double min = 100;
+
+    vector<double> data = {};
+
+
     const int WIDTH = 800, HEIGHT = 800;
     const char *filename = "atest.ppm";
     
@@ -206,15 +230,17 @@ int main()
     Object *sphere;
     Object *light;
     Object *plane;
+    Object *sphereAtLight;
 
-    Vect3f LIGHTSOURCE(WIDTH/2 + 100 , HEIGHT/2 - 100, -1000000);
+
+    //Vect3f LIGHTSOURCE(0 , 0 ,  -1000000);
+    Vect3f LIGHTSOURCE(WIDTH/2 + 110 , HEIGHT/2 + 100 , -1000000);
     
     sphere = new Sphere(Vect3f(WIDTH/2, HEIGHT/2, -1000000), 50, RED);
-    //light = new Sphere(Vect3f(0, 0, 50), 1, WHITE);
-    plane = new Plane(Vect3f(.001, .00000000000001, 19), 1, GREEN);
+    plane = new Plane(Vect3f(0.001, 0, 19), 1, GREEN);
     
     //ORDERED BY IMPORTANCE IN SCENE
-    const vector<Object*> SCENE_OBJECTS = {sphere,plane};
+    const vector<Object*> SCENE_OBJECTS = {sphere, plane};
     
     //Sphere sphereTwo(Vect3f(WIDTH/5, HEIGHT/4, 5), 50);
 
@@ -223,8 +249,8 @@ int main()
         for (int col = 0; col < WIDTH; col++)
         {
             //Ray through each pixel
+            //Ray ray(Vect3f(row,col,0), Vect3f(0,0, -1));
             Ray ray(Vect3f(row,col,0), Vect3f(0,0, -1));
-            
             double t = 20000;
             bool NOHIT = true;
 
@@ -242,22 +268,39 @@ int main()
                         
                         if (obj->intersect(lightRay, t))
                         {
-                            writeOutPixel(&img, obj->getColor() + (t/420));
+                            if(t != 20000)
+                            {
+                                writeOutPixel(&img, (obj->getColor()  * ( 94650/ -t)));
+                                data.push_back(97500/ -t);
+                            }else
+                            {
+                                writeOutPixel(&img, (obj->getColor())) ;
+                            }
+                            
                         }else
                         {
                             writeOutPixel(&img, obj->getColor());
-
                         }
-                        
-        
-                        
                         NOHIT = false;
                     }
                 }
             }
             if (NOHIT) writeOutPixel(&img, SKY_BLUE.lighten(row / 2));
         }
+    
     }
+    for (double b : data)
+    {
+        if(b < min) min = b;
+        if(b > max) max = b;
+        mean += b;
+    }
+    mean /= data.size();
+
+    
+    
+    cout << "MEAN: " << mean << endl << "MIN: " << min << endl << "MAX: " << max;
     return 0;
 }
+
             
