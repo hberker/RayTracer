@@ -7,9 +7,9 @@
 class Object
 {
     public:
-        virtual bool didIntersect(Ray) 
+        virtual double didIntersect(Ray) 
         {
-            return false;
+            return 0;
         };
         virtual Color getColor()
         {

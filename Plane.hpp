@@ -1,6 +1,8 @@
 #ifndef PLANE_HPP
 #define PLANE_HPP
 
+#include <cmath>
+
 #include "Object.hpp"
 #include "Vect.hpp"
 #include "Color.hpp"
@@ -9,9 +11,10 @@ class Plane : public Object
 {
     private:
         Vect normal;
-        Vect center;
-        double distance;
+        double distance;       
         Color color;
+        Vect center;
+
     public:
         Plane();
         Plane(Vect, double, Color, Vect);
@@ -20,7 +23,7 @@ class Plane : public Object
         Vect getNormalAt(Vect point);
 
         double getPlaneDistance();
-        bool didIntersect(Ray);
+        double didIntersect(Ray);
         Color getColor();
 };
 Plane::Plane(Vect n, double d, Color c, Vect cent) : normal(n), distance(d), color(c), center(cent)
@@ -32,7 +35,7 @@ Color Plane::getColor()
 {
     return color;
 }
-bool Plane::didIntersect(Ray r) 
+double Plane::didIntersect(Ray r) 
 {
     return (normal-(r.getOrigin())).dot(normal) / normal.dot(r.getDirection());
 

@@ -4,10 +4,10 @@
 class Color
 {
     private:
-        float r,g,b;
+        int r,g,b;
         void Normalize();
     public:
-        Color(float, float, float);
+        Color(int, int, int);
         Color();
 
         float getR();
@@ -17,15 +17,22 @@ class Color
         void setR(int);
         void setG(int);
         void setB(int);
+        Color operator*(double);
 };
-Color::Color(float R, float G, float B) : r(R), g(G), b(B)
+
+Color::Color(int R, int G, int B) : r(R), g(G), b(B)
 {
     Normalize();
 }
 
 Color::Color() : r(0), g(0), b(0) 
 {}
-
+Color Color::operator*(double v)
+{
+    Color c = Color(r * v, g * v, b * v);
+    c.Normalize();
+    return c;
+}
 void Color::Normalize()
 {
     if(r < 0) r = 0;
