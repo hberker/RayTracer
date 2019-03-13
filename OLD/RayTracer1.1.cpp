@@ -31,6 +31,10 @@ class Color
         {
             return (r = c.r && g == c.g && b == c.b);
         }
+        bool operator!=(Color c)
+        {
+            return (r != c.r || g != c.g || b != c.b);
+        }
         Color operator+(double d)
         {
             return Color(clampDouble255(r+d), clampDouble255(g+d),clampDouble255(b+d));
@@ -198,13 +202,16 @@ class Plane : public Object
 
         Vect3f getPlaneNormal(){ return normal;};
         double getPlaneDistance(){return distance;}
-        Color getPlaneColor() {return color;}
         Vect3f getNormalAt(Vect3f point);
 
         Vect3f normal;
         double distance;
         Color color;
-        bool findIntersection(Ray r)
+        Color getColor()
+        {
+            return color;
+        }
+        bool intersectT(Ray r, double &t)
         {
             Vect3f ray_direction = r.origin;
             double a  = dot(ray_direction, normal);
@@ -212,14 +219,15 @@ class Plane : public Object
             if(a == 0)
             {
                 //ray is parallel to the plane
-                return -1;
+                t = 20000;
                 return false;
 
             }else
             {
                 /* Ray Intersects Plane */
                 double b = dot(normal, (r.origin + (normal * distance).Negative()));
-                return -1*b/a;
+                
+                t = -1*b/a;
                 return true;
 
             }
@@ -228,7 +236,7 @@ class Plane : public Object
         {
             Vect3f ray_direction = r.origin;
             double a  = dot(ray_direction, normal);
-
+            t = 20001;
             if(a == 0)
             {
                 //ray is parallel to the plane
@@ -239,14 +247,12 @@ class Plane : public Object
                 if( -1*b/a > 1000)
                 {
                     return false;
+                
                 }
+                t = -1*b/a;
                 /* Ray Intersects Plane */
                 return true;
             }
-        }
-        Color getColor()
-        {
-            return color;
         }
 };
 int initFile(ofstream *img, const int WIDTH, const int HEIGHT)
@@ -281,22 +287,28 @@ int main()
     Color SKY_BLUE(40,60,92);
 
     Object *sphere;
+    Object *light;
     Object *plane;
+    Object *sphereAtLight;
 
+
+    //Vect3f LIGHTSOURCE(0 , 0 ,  -1000000);
+    Vect3f LIGHTSOURCE(WIDTH/2 + 110 , HEIGHT/2 + 100 , -1000000);
+    
     sphere = new Sphere(Vect3f(WIDTH/2, HEIGHT/2, -1000000), 50, RED);
-    //light = new Sphere(Vect3f(0, 0, 50), 1, WHITE);
-    plane = new Plane(Vect3f(.001, .00000000000001, 19), 1, GREEN);
-
-   
+    plane = new Plane(Vect3f(0.001, 0, 19), 1, GREEN);
+    
     //ORDERED BY IMPORTANCE IN SCENE
     const vector<Object*> SCENE_OBJECTS = {sphere, plane};
     
+    //Sphere sphereTwo(Vect3f(WIDTH/5, HEIGHT/4, 5), 50);
 
     for (int row = 0; row < HEIGHT; row++)
     {
         for (int col = 0; col < WIDTH; col++)
         {
-
+            //Ray through each pixel
+            //Ray ray(Vect3f(row,col,0), Vect3f(0,0, -1));
             Ray ray(Vect3f(row,col,0), Vect3f(0,0, -1));
             double t = 20000;
             bool NOHIT = true;
@@ -307,7 +319,32 @@ int main()
                 {
                     if(obj->intersect(ray, t))
                     {
-                        writeOutPixel(&img, obj->getColor());
+                        
+
+                        Vect3f hitPoint = ray.direction * t + ray.origin;
+                        
+                        Ray lightRay(LIGHTSOURCE, hitPoint);
+                        
+                        if (obj->intersect(lightRay, t))
+                        {
+                            if(t != 20000)
+                            {
+                                if (obj->getColor() != RED) std::cout << t << " ";
+
+                                writeOutPixel(&img, (obj->getColor()  * ( 94650/ -t)));
+                            }else
+                            {
+
+                                //if (obj->getColor() != RED) std::cout << t << " ";
+
+                                writeOutPixel(&img, (obj->getColor())) ;
+                            }
+                            
+                        }else
+                        {
+         
+                            writeOutPixel(&img, obj->getColor());
+                        }
                         NOHIT = false;
                     }
                 }
@@ -317,6 +354,4 @@ int main()
     
     }
     return 0;
-}
-
-            
+}     
